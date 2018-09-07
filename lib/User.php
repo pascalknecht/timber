@@ -270,7 +270,7 @@ class User extends Core implements CoreInterface {
 	 * @param string $field_name The field name for which you want to get the value.
 	 * @return mixed The meta field value.
 	 */
-	public function meta( $field_name ) {
+	public function meta( $field_name = null ) {
 		$value = null;
 
 		/**

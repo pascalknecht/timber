@@ -10,7 +10,7 @@ use Timber\CoreInterface;
  *
  * Timber\Request exposes $_GET and $_POST to the context
  */
-class Request extends Core implements CoreInterface {
+class Request {
 	public $post = array();
 	public $get = array();
 

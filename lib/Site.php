@@ -29,7 +29,7 @@ use Timber\Helper;
  * My site is called Jared's blog, another site on my network is Upstatement.com
  * ```
  */
-class Site extends Core implements CoreInterface {
+class Site {
 
 	/**
 	 * @api

@@ -5,11 +5,11 @@ namespace Timber;
 /**
  * Class Core
  */
-abstract class Core {
+abstract class Core implements CoreInterface {
 
-	public $id;
-	public $ID;
-	public $object_type;
+	private $id;
+	private $ID;
+	private $object_type;
 
 	/**
 	 *
@@ -46,6 +46,45 @@ abstract class Core {
 			return $this->$field = $this->$field();
 		}
 		return $this->$field = false;
+	}
+
+	/**
+	 * Sets up post.
+	 *
+	 * @api
+	 * @since 2.0.0
+	 *
+	 *
+	 * @return \Timber\Post $this
+	 */
+	public function setup() {
+		global $post;
+		global $wp_query;
+
+		// Overwrite post global.
+		$post = $this;
+
+		/**
+		 * Mimick WordPress behavior to improve compatibility
+		 * with third party plugins.
+		 */
+		$wp_query->in_the_loop = true;
+
+		// The setup_postdata() function will call the 'the_post' action.
+		$wp_query->setup_postdata( $post->ID );
+
+		return $this;
+	}
+
+	/**
+	 * Resets the variables after post has been used
+	 * @api
+	 * @since 2.0.0
+	 *
+	 * @return \Timber\Post $this
+	 */
+	public function teardown() {
+		return $this;
 	}
 
 	/**
@@ -128,6 +167,95 @@ abstract class Core {
 		$ret = array();
 		$ret['can_edit'] = $this->can_edit();
 		return $ret;
+	}
+
+	/**
+	 * Gets a post meta value.
+	 *
+	 * Returns a meta value for a post that’s saved in the post meta database table.
+	 *
+	 * @api
+	 *
+	 * @param string $field_name The field name for which you want to get the value.
+	 * @return mixed The meta field value.
+	 */
+	public function meta( $field_name = null ) {
+		/**
+		 * Filters the value for a post meta field before it is fetched from the database.
+		 *
+		 * @todo  Add description, example
+		 *
+		 * @see   \Timber\Post::meta()
+		 * @since 2.0.0
+		 *
+		 * @param string       $value      The field value. Default null.
+		 * @param int          $post_id    The post ID.
+		 * @param string       $field_name The name of the meta field to get the value for.
+		 * @param \Timber\Post $post       The post object.
+		 */
+		$value = apply_filters( 'timber/post/pre_meta', null, $this->ID, $field_name, $this );
+
+		if ( null === $field_name ) {
+			Helper::warn('You have not set what meta field you want to retrive this can cause strange behavior and is not recommended');
+		}
+
+		if ( "meta" === $field_name ) {
+			Helper::warn('You are trying to retrive a meta field named "meta" this can cause strange behavior and is not recommended');
+		}
+
+		/**
+		 * Filters the value for a post meta field before it is fetched from the database.
+		 *
+		 * @deprecated 2.0.0, use `timber/post/pre_meta`
+		 */
+		$value = apply_filters_deprecated(
+			'timber_post_get_meta_field_pre',
+			array( $value, $this->ID, $field_name, $this ),
+			'2.0.0',
+			'timber/post/pre_meta'
+		);
+
+		if ( $value === null ) {
+			$value = get_post_meta($this->ID, $field_name);
+			if ( is_array($value) && count($value) == 1 ) {
+				$value = $value[0];
+			}
+			if ( is_array($value) && count($value) == 0 ) {
+				$value = null;
+			}
+		}
+
+		/**
+		 * Filters the value for a post meta field.
+		 *
+		 * This filter is used by the ACF Integration.
+		 *
+		 * @todo  Add description, example
+		 *
+		 * @see   \Timber\Post::meta()
+		 * @since 2.0.0
+		 *
+		 * @param string       $value      The field value.
+		 * @param int          $post_id    The post ID.
+		 * @param string       $field_name The name of the meta field to get the value for.
+		 * @param \Timber\Post $post       The post object.
+		 */
+		$value = apply_filters( 'timber/post/meta', $value, $this->ID, $field_name, $this );
+
+		/**
+		 * Filters the value for a post meta field.
+		 *
+		 * @deprecated 2.0.0, use `timber/post/meta`
+		 */
+		$value = apply_filters_deprecated(
+			'timber_post_get_meta_field',
+			array( $value, $this->ID, $field_name, $this ),
+			'2.0.0',
+			'timber/post/meta'
+		);
+
+		$value = $this->convert($value, __CLASS__);
+		return $value;
 	}
 
 	/**
